@@ -6,7 +6,8 @@ const LiveDataIndicator = ({
   isFetching, 
   apiCallCount,
   successRate,
-  dataSource
+  dataSource,
+  nextUpdateCountdown
 }) => {
   const [pulseCount, setPulseCount] = useState(0);
 
@@ -114,7 +115,7 @@ const LiveDataIndicator = ({
         {/* Live Update Animation */}
         <div className="bg-slate-700 bg-opacity-50 rounded-lg p-4 border border-blue-500 border-opacity-20">
           <p className="text-xs font-semibold text-gray-400 uppercase mb-3">⏱️ Update Cycle</p>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mb-4">
             {[0, 1, 2, 3, 4].map((index) => (
               <div
                 key={index}
@@ -126,10 +127,11 @@ const LiveDataIndicator = ({
               ></div>
             ))}
           </div>
-          <p className="text-xs text-gray-500 mt-3">
-            {isFetching ? 'Fetching data...' : 'Next fetch in 10 seconds'}
-          </p>
-          <p className="text-xs text-gray-600 mt-1">
+          <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-lg p-3 text-center mb-2">
+            <p className="text-2xl font-bold text-white">{nextUpdateCountdown}s</p>
+            <p className="text-xs text-blue-100">Next fetch</p>
+          </div>
+          <p className="text-xs text-gray-600 mt-2">
             Last update: {lastUpdateTime || '--:--:--'}
           </p>
         </div>

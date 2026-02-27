@@ -33,9 +33,10 @@ const Dashboard = () => {
   const [apiCallCount, setApiCallCount] = useState(0);
   const [apiSuccessCount, setApiSuccessCount] = useState(0);
   const [dataSource, setDataSource] = useState({
-    weather: { connected: false },
-    earthquake: { connected: false },
+    weather: { connected: true },  // Optimistic: assume connected initially
+    earthquake: { connected: true },  // Optimistic: assume connected initially
   });
+  const [nextUpdateCountdown, setNextUpdateCountdown] = useState(10);
 
   // ==========================================
   // TRACK EARTHQUAKE SPIKE
@@ -71,9 +72,11 @@ const Dashboard = () => {
 
       const { main, wind } = response.data;
       
-      // Mark weather API as connected
+      // Mark weather API as connected on success
       setDataSource(prev => ({ ...prev, weather: { connected: true } }));
       setApiSuccessCount(prev => prev + 1);
+      
+      console.log('✅ Weather API Success - Temp:', Math.round(main.temp * 10) / 10, 'Wind:', Math.round(wind.speed * 10) / 10);
       
       return {
         temperature: Math.round(main.temp * 10) / 10,
@@ -81,6 +84,7 @@ const Dashboard = () => {
       };
     } catch (error) {
       console.error('❌ Weather API Error:', error.message);
+      console.log('⚠️ Weather API failed, falling back to simulation');
       setDataSource(prev => ({ ...prev, weather: { connected: false } }));
       return null;
     }
@@ -123,12 +127,14 @@ const Dashboard = () => {
         }
       }
       
-      // Mark earthquake API as connected
+      // Mark earthquake API as connected on success
       setDataSource(prev => ({ ...prev, earthquake: { connected: true } }));
       setApiSuccessCount(prev => prev + 1);
+      console.log('✅ Earthquake API Success');
       return 0;
     } catch (error) {
       console.error('❌ Earthquake API Error:', error.message);
+      console.log('⚠️ Earthquake API failed');
       setDataSource(prev => ({ ...prev, earthquake: { connected: false } }));
       return 0;
     }
@@ -140,12 +146,14 @@ const Dashboard = () => {
   useEffect(() => {
     let isUnmounted = false;
     let interval;
+    let countdownInterval;
 
     const updateSensorData = async () => {
       if (isUnmounted) return;
 
-      // Set fetching state
+      // Set fetching state and reset countdown
       setIsFetching(true);
+      setNextUpdateCountdown(10);
       setApiCallCount(prev => prev + 1);
 
       // Fetch real data from APIs
@@ -214,10 +222,25 @@ const Dashboard = () => {
 
       setLastUpdateTime(new Date().toLocaleTimeString());
       setIsFetching(false);
+      setNextUpdateCountdown(10);
+    };
+
+    // Countdown timer
+    const startCountdown = () => {
+      if (countdownInterval) clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        setNextUpdateCountdown(prev => {
+          if (prev <= 1) {
+            return 10;
+          }
+          return prev - 1;
+        });
+      }, 1000);
     };
 
     // Initial update
     updateSensorData();
+    startCountdown();
 
     // Set up interval for continuous updates (every 10 seconds)
     interval = setInterval(updateSensorData, 10000);
@@ -225,6 +248,7 @@ const Dashboard = () => {
     return () => {
       isUnmounted = true;
       clearInterval(interval);
+      clearInterval(countdownInterval);
     };
   }, []);
 
@@ -258,6 +282,7 @@ const Dashboard = () => {
           apiCallCount={apiCallCount}
           successRate={apiCallCount > 0 ? Math.round((apiSuccessCount / (apiCallCount * 2)) * 100) : 0}
           dataSource={dataSource}
+          nextUpdateCountdown={nextUpdateCountdown}
         />
 
         {/* Alert Box */}
