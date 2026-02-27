@@ -285,6 +285,85 @@ const Dashboard = () => {
           nextUpdateCountdown={nextUpdateCountdown}
         />
 
+        {/* API ROLE EXPLANATION PANEL */}
+        <div className="bg-gradient-to-r from-indigo-900 to-purple-900 border border-indigo-500 border-opacity-50 rounded-lg p-6 mb-6 shadow-2xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Weather API */}
+            <div className={`p-4 rounded-lg border transition-all ${
+              dataSource.weather.connected
+                ? 'bg-green-900 bg-opacity-30 border-green-500'
+                : 'bg-red-900 bg-opacity-30 border-red-500'
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`text-2xl ${dataSource.weather.connected ? '🌍' : '❌'}`}></span>
+                <p className="text-sm font-bold text-gray-300">WEATHER API</p>
+                <span className={`text-xs px-2 py-1 rounded font-bold ${
+                  dataSource.weather.connected
+                    ? 'bg-green-500 text-white'
+                    : 'bg-red-500 text-white'
+                }`}>
+                  {dataSource.weather.connected ? 'LIVE ✓' : 'OFFLINE'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 mb-3 leading-relaxed">
+                <strong>Role:</strong> Fetches real temperature & wind speed from OpenWeather API
+              </p>
+              <div className="space-y-2 text-xs">
+                <p className="text-gray-300">
+                  📊 <strong>Temperature</strong> → Thermal monitoring on dashboard
+                </p>
+                <p className="text-gray-300">
+                  💨 <strong>Wind Speed</strong> → Vibration calculation (speed × 4) = Real physical effect
+                </p>
+                <p className={`font-bold ${
+                  dataSource.weather.connected ? 'text-green-400' : 'text-red-400'
+                }`}>
+                  {dataSource.weather.connected 
+                    ? '✓ Connected: Real data flowing'
+                    : '✗ Offline: Check .env.local REACT_APP_WEATHER_KEY'}
+                </p>
+              </div>
+            </div>
+
+            {/* Earthquake API */}
+            <div className={`p-4 rounded-lg border transition-all ${
+              dataSource.earthquake.connected
+                ? 'bg-green-900 bg-opacity-30 border-green-500'
+                : 'bg-yellow-900 bg-opacity-30 border-yellow-500'
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={`text-2xl ${dataSource.earthquake.connected ? '📍' : '⚠️'}`}></span>
+                <p className="text-sm font-bold text-gray-300">EARTHQUAKE API</p>
+                <span className={`text-xs px-2 py-1 rounded font-bold ${
+                  dataSource.earthquake.connected
+                    ? 'bg-green-500 text-white'
+                    : 'bg-yellow-500 text-gray-900'
+                }`}>
+                  {dataSource.earthquake.connected ? 'LIVE ✓' : 'CHECKING'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 mb-3 leading-relaxed">
+                <strong>Role:</strong> Detects real earthquakes (magnitude > 4) from USGS in real-time
+              </p>
+              <div className="space-y-2 text-xs">
+                <p className="text-gray-300">
+                  🌊 <strong>Magnitude Detection</strong> → Only shows earthquakes > 4.0
+                </p>
+                <p className="text-gray-300">
+                  💥 <strong>Vibration Spike</strong> → Detected quake × 2 = Bridge vibration effect
+                </p>
+                <p className={`font-bold ${
+                  dataSource.earthquake.connected ? 'text-green-400' : 'text-orange-400'
+                }`}>
+                  {dataSource.earthquake.connected 
+                    ? '✓ Connected: Real earthquakes monitored'
+                    : '⚠ Checking: No API key needed'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Alert Box */}
         {isHighRisk && (
           <div className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 rounded-lg shadow-lg animate-pulse">
