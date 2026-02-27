@@ -7,6 +7,7 @@ import BridgeModel from '../components/BridgeModel';
 import VibrationChart from '../components/VibrationChart';
 import MaintenanceRecommendation from '../components/MaintenanceRecommendation';
 import FeaturesSection from '../components/FeaturesSection';
+import LiveDataIndicator from '../components/LiveDataIndicator';
 
 const Dashboard = () => {
   // ==========================================
@@ -24,6 +25,17 @@ const Dashboard = () => {
   const [isLiveDataConnected, setIsLiveDataConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('Connecting to Live Data...');
   const [lastUpdateTime, setLastUpdateTime] = useState(null);
+
+  // ==========================================
+  // LIVE DATA TRACKING (For Hackathon Display)
+  // ==========================================
+  const [isFetching, setIsFetching] = useState(false);
+  const [apiCallCount, setApiCallCount] = useState(0);
+  const [apiSuccessCount, setApiSuccessCount] = useState(0);
+  const [dataSource, setDataSource] = useState({
+    weather: { connected: false },
+    earthquake: { connected: false },
+  });
 
   // ==========================================
   // TRACK EARTHQUAKE SPIKE
@@ -48,6 +60,7 @@ const Dashboard = () => {
 
       if (!apiKey || apiKey === 'your_openweather_api_key_here') {
         console.warn('⚠️ Weather API key not configured. Using backup mode.');
+        setDataSource(prev => ({ ...prev, weather: { connected: false } }));
         return null;
       }
 
@@ -58,12 +71,17 @@ const Dashboard = () => {
 
       const { main, wind } = response.data;
       
+      // Mark weather API as connected
+      setDataSource(prev => ({ ...prev, weather: { connected: true } }));
+      setApiSuccessCount(prev => prev + 1);
+      
       return {
-        temperature: Math.round(main.temp * 10) / 10, // Live temperature
-        windSpeed: Math.round(wind.speed * 10) / 10, // Live wind speed
+        temperature: Math.round(main.temp * 10) / 10,
+        windSpeed: Math.round(wind.speed * 10) / 10,
       };
     } catch (error) {
       console.error('❌ Weather API Error:', error.message);
+      setDataSource(prev => ({ ...prev, weather: { connected: false } }));
       return null;
     }
   };
@@ -99,14 +117,19 @@ const Dashboard = () => {
             earthquakeSpikeRef.current = spike;
             
             console.log(`📍 Earthquake detected: Magnitude ${latestEarthquake.magnitude} - ${latestEarthquake.place}`);
+            setApiSuccessCount(prev => prev + 1);
             return spike;
           }
         }
       }
       
+      // Mark earthquake API as connected
+      setDataSource(prev => ({ ...prev, earthquake: { connected: true } }));
+      setApiSuccessCount(prev => prev + 1);
       return 0;
     } catch (error) {
       console.error('❌ Earthquake API Error:', error.message);
+      setDataSource(prev => ({ ...prev, earthquake: { connected: false } }));
       return 0;
     }
   };
@@ -120,6 +143,10 @@ const Dashboard = () => {
 
     const updateSensorData = async () => {
       if (isUnmounted) return;
+
+      // Set fetching state
+      setIsFetching(true);
+      setApiCallCount(prev => prev + 1);
 
       // Fetch real data from APIs
       const weatherData = await fetchWeatherData();
@@ -186,6 +213,7 @@ const Dashboard = () => {
       });
 
       setLastUpdateTime(new Date().toLocaleTimeString());
+      setIsFetching(false);
     };
 
     // Initial update
@@ -222,36 +250,15 @@ const Dashboard = () => {
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Live Data Connection Status */}
-        <div className={`mb-6 p-4 rounded-lg shadow-lg flex items-center justify-between ${
-          isLiveDataConnected 
-            ? 'bg-green-100 border-l-4 border-green-500' 
-            : 'bg-yellow-100 border-l-4 border-yellow-500'
-        }`}>
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">
-              {isLiveDataConnected ? '🌍' : '⚙️'}
-            </span>
-            <div>
-              <p className={`font-bold ${
-                isLiveDataConnected ? 'text-green-700' : 'text-yellow-700'
-              }`}>
-                {connectionStatus}
-              </p>
-              <p className={`text-sm ${
-                isLiveDataConnected ? 'text-green-600' : 'text-yellow-600'
-              }`}>
-                {isLiveDataConnected 
-                  ? 'Real-time weather & earthquake data' 
-                  : 'Simulated backup data'}
-              </p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-xs font-semibold text-gray-600">Last Update</p>
-            <p className="text-lg font-bold text-gray-800">{lastUpdateTime || '--:--:--'}</p>
-          </div>
-        </div>
+        {/* Live Data Indicator - Hackathon Display */}
+        <LiveDataIndicator
+          isConnected={isLiveDataConnected}
+          lastUpdateTime={lastUpdateTime}
+          isFetching={isFetching}
+          apiCallCount={apiCallCount}
+          successRate={apiCallCount > 0 ? Math.round((apiSuccessCount / (apiCallCount * 2)) * 100) : 0}
+          dataSource={dataSource}
+        />
 
         {/* Alert Box */}
         {isHighRisk && (
