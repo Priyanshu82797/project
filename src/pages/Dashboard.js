@@ -59,8 +59,10 @@ const Dashboard = () => {
       const city = process.env.REACT_APP_WEATHER_CITY || 'London';
       const countryCode = process.env.REACT_APP_WEATHER_COUNTRY_CODE || 'GB';
 
-      if (!apiKey || apiKey === 'your_openweather_api_key_here') {
-        console.warn('⚠️ Weather API key not configured. Using backup mode.');
+      // Check if API key is configured (placeholder values mean not set)
+      if (!apiKey || apiKey === 'demo_key_here' || apiKey.includes('YOUR_KEY') || apiKey.includes('key_here')) {
+        console.warn('⚠️ Weather API key not configured. Please add your OpenWeather API key to .env.local');
+        console.warn('📖 See WEATHER_API_SETUP.md for instructions');
         setDataSource(prev => ({ ...prev, weather: { connected: false } }));
         return null;
       }
@@ -308,7 +310,7 @@ const Dashboard = () => {
               <p className="text-xs text-gray-400 mb-3 leading-relaxed">
                 <strong>Role:</strong> Fetches real temperature & wind speed from OpenWeather API
               </p>
-              <div className="space-y-2 text-xs">
+              <div className="space-y-2 text-xs mb-4">
                 <p className="text-gray-300">
                   📊 <strong>Temperature</strong> → Thermal monitoring on dashboard
                 </p>
@@ -320,9 +322,29 @@ const Dashboard = () => {
                 }`}>
                   {dataSource.weather.connected 
                     ? '✓ Connected: Real data flowing'
-                    : '✗ Offline: Check .env.local REACT_APP_WEATHER_KEY'}
+                    : '✗ Offline: API key not configured'}
                 </p>
               </div>
+              
+              {/* Setup Button */}
+              {!dataSource.weather.connected && (
+                <a 
+                  href="https://openweathermap.org/api" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-2 px-3 rounded transition-colors block text-center mb-2"
+                >
+                  🔧 Get Free API Key
+                </a>
+              )}
+              
+              {/* Instructions Link */}
+              <a 
+                href={process.env.PUBLIC_URL + '/WEATHER_API_SETUP.md'} 
+                className="w-full bg-slate-700 hover:bg-slate-600 text-gray-200 text-xs font-bold py-2 px-3 rounded transition-colors block text-center"
+              >
+                📖 Setup Guide
+              </a>
             </div>
 
             {/* Earthquake API */}
