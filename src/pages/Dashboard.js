@@ -144,10 +144,6 @@ const Dashboard = () => {
         <div className="mb-8">
           <MaintenanceRecommendation riskScore={riskScore} />
         </div>
-        {/* Maintenance Recommendation Section */}
-        <div className="mb-8">
-          <MaintenanceRecommendation riskScore={riskScore} />
-        </div>
 
         {/* Bottom Section: Chart & 3D Model */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">

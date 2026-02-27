@@ -1,12 +1,39 @@
 import React from 'react';
-import Dashboard from './pages/Dashboard';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './utils/AuthContext';
+import PrivateRoute from './components/PrivateRoute';
 import './index.css';
+
+// Pages
+import LandingPage from './pages/LandingPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import Dashboard from './pages/Dashboard';
+import DemoPage from './pages/DemoPage';
+import HistoryPage from './pages/HistoryPage';
+import AlertsPage from './pages/AlertsPage';
 
 function App() {
   return (
-    <div className="App">
-      <Dashboard />
-    </div>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          {/* Public Pages */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/demo" element={<DemoPage />} />
+
+          {/* Protected Pages */}
+          <Route path="/dashboard" element={<PrivateRoute component={Dashboard} />} />
+          <Route path="/history" element={<PrivateRoute component={HistoryPage} />} />
+          <Route path="/alerts" element={<PrivateRoute component={AlertsPage} />} />
+
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 }
 
