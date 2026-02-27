@@ -1,57 +1,208 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
 import Navbar from '../components/Navbar';
 import SensorCard from '../components/SensorCard';
 import RiskMeter from '../components/RiskMeter';
 import BridgeModel from '../components/BridgeModel';
 import VibrationChart from '../components/VibrationChart';
 import MaintenanceRecommendation from '../components/MaintenanceRecommendation';
+import FeaturesSection from '../components/FeaturesSection';
 
 const Dashboard = () => {
-  // Sensor data state
+  // ==========================================
+  // SENSOR DATA STATE
+  // ==========================================
   const [vibration, setVibration] = useState(15);
   const [load, setLoad] = useState(35);
   const [crack, setCrack] = useState(5);
   const [temperature, setTemperature] = useState(22);
-
-  // Chart data
   const [chartData, setChartData] = useState([]);
 
-  // Risk calculation
+  // ==========================================
+  // CONNECTION STATE
+  // ==========================================
+  const [isLiveDataConnected, setIsLiveDataConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('Connecting to Live Data...');
+  const [lastUpdateTime, setLastUpdateTime] = useState(null);
+
+  // ==========================================
+  // TRACK EARTHQUAKE SPIKE
+  // ==========================================
+  const earthquakeSpikeRef = useRef(0);
+  const lastEarthquakeRef = useRef(null);
+
+  // ==========================================
+  // RISK CALCULATION (Same formula)
+  // ==========================================
   const riskScore = (vibration * 0.4) + (crack * 0.3) + (load * 0.3);
   const isHighRisk = riskScore > 75;
 
-  // Simulate sensor data updates every 2 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Vibration: realistic range 10-90
-      setVibration(prev => {
-        const change = (Math.random() - 0.5) * 15;
-        return Math.max(5, Math.min(95, prev + change));
-      });
+  // ==========================================
+  // FETCH REAL WEATHER DATA
+  // ==========================================
+  const fetchWeatherData = async () => {
+    try {
+      const apiKey = process.env.REACT_APP_WEATHER_KEY;
+      const city = process.env.REACT_APP_WEATHER_CITY || 'London';
+      const countryCode = process.env.REACT_APP_WEATHER_COUNTRY_CODE || 'GB';
 
-      // Load Stress: realistic range 20-80
+      if (!apiKey || apiKey === 'your_openweather_api_key_here') {
+        console.warn('⚠️ Weather API key not configured. Using backup mode.');
+        return null;
+      }
+
+      const response = await axios.get(
+        `https://api.openweathermap.org/data/2.5/weather?q=${city},${countryCode}&appid=${apiKey}&units=metric`,
+        { timeout: 5000 }
+      );
+
+      const { main, wind } = response.data;
+      
+      return {
+        temperature: Math.round(main.temp * 10) / 10, // Live temperature
+        windSpeed: Math.round(wind.speed * 10) / 10, // Live wind speed
+      };
+    } catch (error) {
+      console.error('❌ Weather API Error:', error.message);
+      return null;
+    }
+  };
+
+  // ==========================================
+  // FETCH REAL EARTHQUAKE DATA
+  // ==========================================
+  const fetchEarthquakeData = async () => {
+    try {
+      const response = await axios.get(
+        'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_hour.geojson',
+        { timeout: 5000 }
+      );
+
+      if (response.data.features && response.data.features.length > 0) {
+        // Get the most recent earthquake with magnitude > 4
+        const recentEarthquakes = response.data.features
+          .map(eq => ({
+            magnitude: eq.properties.mag,
+            place: eq.properties.place,
+            time: eq.properties.time,
+          }))
+          .filter(eq => eq.magnitude > 4)
+          .sort((a, b) => b.time - a.time);
+
+        if (recentEarthquakes.length > 0) {
+          const latestEarthquake = recentEarthquakes[0];
+          
+          // Only process if it's a new earthquake (different from last one)
+          if (lastEarthquakeRef.current !== latestEarthquake.time) {
+            lastEarthquakeRef.current = latestEarthquake.time;
+            const spike = latestEarthquake.magnitude * 2;
+            earthquakeSpikeRef.current = spike;
+            
+            console.log(`📍 Earthquake detected: Magnitude ${latestEarthquake.magnitude} - ${latestEarthquake.place}`);
+            return spike;
+          }
+        }
+      }
+      
+      return 0;
+    } catch (error) {
+      console.error('❌ Earthquake API Error:', error.message);
+      return 0;
+    }
+  };
+
+  // ==========================================
+  // MAIN SENSOR UPDATE LOOP (Real + Simulated Data)
+  // ==========================================
+  useEffect(() => {
+    let isUnmounted = false;
+    let interval;
+
+    const updateSensorData = async () => {
+      if (isUnmounted) return;
+
+      // Fetch real data from APIs
+      const weatherData = await fetchWeatherData();
+      const earthquakeSpike = await fetchEarthquakeData();
+
+      if (isUnmounted) return;
+
+      // ==========================================
+      // UPDATE TEMPERATURE (REAL from weather API)
+      // ==========================================
+      if (weatherData) {
+        setTemperature(weatherData.temperature);
+        
+        // ==========================================
+        // UPDATE VIBRATION (REAL wind + earthquake)
+        // ==========================================
+        // Base vibration from wind speed: windSpeed * 4
+        let baseVibration = weatherData.windSpeed * 4;
+        
+        // Add earthquake spike if active
+        let totalVibration = baseVibration + earthquakeSpikeRef.current;
+        
+        // Gradually reduce earthquake spike over time
+        if (earthquakeSpikeRef.current > 0) {
+          earthquakeSpikeRef.current = Math.max(0, earthquakeSpikeRef.current - 2);
+        }
+        
+        // Keep vibration in realistic range: 5-95
+        totalVibration = Math.max(5, Math.min(95, totalVibration));
+        setVibration(totalVibration);
+
+        setIsLiveDataConnected(true);
+        setConnectionStatus('✅ Live Data Connected');
+      } else {
+        // FALLBACK: Use simulated data if API fails
+        setIsLiveDataConnected(false);
+        setConnectionStatus('🔄 Using Backup Mode');
+
+        setTemperature(prev => {
+          const change = (Math.random() - 0.5) * 2;
+          return Math.max(10, Math.min(40, prev + change));
+        });
+
+        setVibration(prev => {
+          const change = (Math.random() - 0.5) * 15;
+          return Math.max(5, Math.min(95, prev + change));
+        });
+      }
+
+      // ==========================================
+      // UPDATE LOAD STRESS (SIMULATED - traffic)
+      // ==========================================
       setLoad(prev => {
         const change = (Math.random() - 0.5) * 10;
         return Math.max(10, Math.min(100, prev + change));
       });
 
-      // Crack Width: realistic range 0-20
+      // ==========================================
+      // UPDATE CRACK WIDTH (SIMULATED - slow growth)
+      // ==========================================
       setCrack(prev => {
         const change = (Math.random() - 0.5) * 3;
         return Math.max(0, Math.min(25, prev + change));
       });
 
-      // Temperature: realistic range 15-35°C
-      setTemperature(prev => {
-        const change = (Math.random() - 0.5) * 2;
-        return Math.max(10, Math.min(40, prev + change));
-      });
-    }, 2000);
+      setLastUpdateTime(new Date().toLocaleTimeString());
+    };
 
-    return () => clearInterval(interval);
+    // Initial update
+    updateSensorData();
+
+    // Set up interval for continuous updates (every 10 seconds)
+    interval = setInterval(updateSensorData, 10000);
+
+    return () => {
+      isUnmounted = true;
+      clearInterval(interval);
+    };
   }, []);
 
-  // Update chart data
+  // ==========================================
+  // UPDATE CHART DATA
+  // ==========================================
   useEffect(() => {
     setChartData(prev => {
       const newData = [
@@ -71,6 +222,37 @@ const Dashboard = () => {
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Live Data Connection Status */}
+        <div className={`mb-6 p-4 rounded-lg shadow-lg flex items-center justify-between ${
+          isLiveDataConnected 
+            ? 'bg-green-100 border-l-4 border-green-500' 
+            : 'bg-yellow-100 border-l-4 border-yellow-500'
+        }`}>
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">
+              {isLiveDataConnected ? '🌍' : '⚙️'}
+            </span>
+            <div>
+              <p className={`font-bold ${
+                isLiveDataConnected ? 'text-green-700' : 'text-yellow-700'
+              }`}>
+                {connectionStatus}
+              </p>
+              <p className={`text-sm ${
+                isLiveDataConnected ? 'text-green-600' : 'text-yellow-600'
+              }`}>
+                {isLiveDataConnected 
+                  ? 'Real-time weather & earthquake data' 
+                  : 'Simulated backup data'}
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-xs font-semibold text-gray-600">Last Update</p>
+            <p className="text-lg font-bold text-gray-800">{lastUpdateTime || '--:--:--'}</p>
+          </div>
+        </div>
+
         {/* Alert Box */}
         {isHighRisk && (
           <div className="mb-6 p-4 bg-red-100 border-l-4 border-red-500 rounded-lg shadow-lg animate-pulse">
@@ -145,6 +327,11 @@ const Dashboard = () => {
           <MaintenanceRecommendation riskScore={riskScore} />
         </div>
 
+        {/* Key Features Section */}
+        <div className="mb-16 bg-slate-800 bg-opacity-50 backdrop-blur-sm border border-blue-500 border-opacity-30 rounded-lg p-8">
+          <FeaturesSection inDashboard={true} />
+        </div>
+
         {/* Bottom Section: Chart & 3D Model */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
           {/* Chart */}
@@ -188,9 +375,11 @@ const Dashboard = () => {
             </p>
           </div>
           <div className="text-center">
-            <p className="text-gray-600 text-sm">Data Points</p>
-            <p className="text-2xl font-bold text-purple-600">
-              {chartData.length}
+            <p className="text-gray-600 text-sm">Data Source</p>
+            <p className={`text-lg font-bold ${
+              isLiveDataConnected ? 'text-green-600' : 'text-yellow-600'
+            }`}>
+              {isLiveDataConnected ? '🌍 Live' : '⚙️ Backup'}
             </p>
           </div>
         </div>

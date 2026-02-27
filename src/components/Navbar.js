@@ -53,6 +53,14 @@ const Navbar = () => {
                     Dashboard
                   </Link>
                   <Link
+                    to="/features"
+                    className={`hover:bg-blue-700 px-3 py-2 rounded transition ${
+                      location.pathname === '/features' ? 'bg-blue-700' : ''
+                    }`}
+                  >
+                    Features
+                  </Link>
+                  <Link
                     to="/history"
                     className={`hover:bg-blue-700 px-3 py-2 rounded transition ${
                       location.pathname === '/history' ? 'bg-blue-700' : ''

@@ -14,6 +14,8 @@ import HistoryPage from './pages/HistoryPage';
 import AlertsPage from './pages/AlertsPage';
 import FinalizationPage from './pages/FinalizationPage';
 import UserProfile from './pages/UserProfile';
+import FeaturesPage from './pages/FeaturesPage';
+import FeatureDetailPage from './pages/FeatureDetailPage';
 
 function App() {
   return (
@@ -26,6 +28,8 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/demo" element={<DemoPage />} />
           <Route path="/finalization" element={<FinalizationPage />} />
+          <Route path="/features" element={<FeaturesPage />} />
+          <Route path="/feature/:id" element={<FeatureDetailPage />} />
 
           {/* Protected Pages */}
           <Route path="/dashboard" element={<PrivateRoute component={Dashboard} />} />
