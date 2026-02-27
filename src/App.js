@@ -12,6 +12,8 @@ import Dashboard from './pages/Dashboard';
 import DemoPage from './pages/DemoPage';
 import HistoryPage from './pages/HistoryPage';
 import AlertsPage from './pages/AlertsPage';
+import FinalizationPage from './pages/FinalizationPage';
+import UserProfile from './pages/UserProfile';
 
 function App() {
   return (
@@ -23,9 +25,11 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/demo" element={<DemoPage />} />
+          <Route path="/finalization" element={<FinalizationPage />} />
 
           {/* Protected Pages */}
           <Route path="/dashboard" element={<PrivateRoute component={Dashboard} />} />
+          <Route path="/profile" element={<PrivateRoute component={UserProfile} />} />
           <Route path="/history" element={<PrivateRoute component={HistoryPage} />} />
           <Route path="/alerts" element={<PrivateRoute component={AlertsPage} />} />
 

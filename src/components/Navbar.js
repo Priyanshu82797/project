@@ -68,6 +68,14 @@ const Navbar = () => {
                   >
                     Alerts
                   </Link>
+                  <Link
+                    to="/profile"
+                    className={`hover:bg-blue-700 px-3 py-2 rounded transition ${
+                      location.pathname === '/profile' ? 'bg-blue-700' : ''
+                    }`}
+                  >
+                    Profile
+                  </Link>
                 </div>
 
                 {/* User Menu */}
@@ -83,12 +91,28 @@ const Navbar = () => {
 
                   {/* Dropdown Menu */}
                   {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-48 bg-slate-800 rounded-lg shadow-xl py-2 z-50">
-                      <div className="px-4 py-2 border-b border-gray-700">
+                    <div className="absolute right-0 mt-2 w-56 bg-slate-800 rounded-lg shadow-xl py-2 z-50">
+                      <div className="px-4 py-3 border-b border-gray-700">
                         <p className="text-sm font-semibold text-white">{user?.name}</p>
                         <p className="text-xs text-gray-400">{user?.email}</p>
-                        <p className="text-xs text-blue-300 mt-1">Role: {user?.role}</p>
+                        <div className="mt-2 flex gap-2">
+                          <span className={`inline-block px-2 py-1 text-xs font-bold rounded-full ${
+                            user?.role === 'admin' 
+                              ? 'bg-purple-600 text-white' 
+                              : user?.role === 'engineer'
+                              ? 'bg-green-600 text-white'
+                              : 'bg-blue-600 text-white'
+                          }`}>
+                            {user?.role === 'admin' ? '👤 Admin' : user?.role === 'engineer' ? '⚙️ Engineer' : '👤 User'}
+                          </span>
+                        </div>
                       </div>
+                      <Link
+                        to="/profile"
+                        className="block px-4 py-2 text-sm text-gray-300 hover:bg-blue-600 hover:text-white transition"
+                      >
+                        👤 View Profile
+                      </Link>
                       <button
                         onClick={handleLogout}
                         className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-red-600 hover:text-white transition"
